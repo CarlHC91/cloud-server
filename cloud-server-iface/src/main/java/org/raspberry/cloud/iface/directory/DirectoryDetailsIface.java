@@ -15,6 +15,17 @@ public class DirectoryDetailsIface {
 	@Value("${iface.server.cloud.path}")
 	private String path;
 
+	public DirectoryDetailsVO findOneById(UserDetailsVO userSessionVO, DirectoryDetailsVO directoryDetailsVO) {
+		String url = path + "/directoryDetails/findOneById?token_api={token_api}&id_directory={id_directory}";
+
+		Map<String, String> params = new HashMap<>();
+		params.put("token_api", userSessionVO.getTokenApi());
+		params.put("id_directory", Long.toString(directoryDetailsVO.getIdDirectory()));
+
+		RestTemplate restTemplate = new RestTemplate();
+		return restTemplate.postForObject(url, null, DirectoryDetailsVO.class, params);
+	}
+	
 	public DirectoryDetailsVO[] findAllByParent(UserDetailsVO userSessionVO, DirectoryDetailsVO parentDirectoryVO) {
 		String url = path + "/directoryDetails/findAllByParent?token_api={token_api}&id_parent={id_parent}";
 
@@ -34,7 +45,7 @@ public class DirectoryDetailsIface {
 		params.put("id_directory", Long.toString(directoryDetailsVO.getIdDirectory()));
 
 		RestTemplate restTemplate = new RestTemplate();
-		restTemplate.postForObject(url, null, String.class, params);
+		restTemplate.postForObject(url, null, null, params);
 	}
 
 }

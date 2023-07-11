@@ -17,6 +17,18 @@ public class DirectoryDetailsRest {
 	@Autowired
 	private DirectoryDetailsService directoryDetailsService;
 
+	@PostMapping("/directoryDetails/findOneById")
+	@PreAuthorize("hasAuthority('/cloud/directoryDetails/findOneById')")
+	public DirectoryDetailsVO findOneById(@RequestParam("id_directory") Long idDirectory) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
+
+		DirectoryDetailsVO directoryDetailsVO = new DirectoryDetailsVO();
+		directoryDetailsVO.setIdDirectory(idDirectory);
+
+		return directoryDetailsService.findOneById(userSessionVO, directoryDetailsVO);
+	}
+	
 	@PostMapping("/directoryDetails/findAllByParent")
 	@PreAuthorize("hasAuthority('/cloud/directoryDetails/findAllByParent')")
 	public DirectoryDetailsVO[] findAllByParent(@RequestParam("id_parent") Long idParent) {

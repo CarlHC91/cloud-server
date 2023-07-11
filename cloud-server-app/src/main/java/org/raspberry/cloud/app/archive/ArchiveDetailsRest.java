@@ -21,6 +21,18 @@ public class ArchiveDetailsRest {
 	@Autowired
 	private ArchiveDetailsService archiveDetailsService;
 
+	@PostMapping("/archiveDetails/findOneById")
+	@PreAuthorize("hasAuthority('/cloud/archiveDetails/findOneById')")
+	public ArchiveDetailsVO findOneById(@RequestParam("id_archive") Long idArchive) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
+
+		ArchiveDetailsVO archiveDetailsVO = new ArchiveDetailsVO();
+		archiveDetailsVO.setIdArchive(idArchive);
+
+		return archiveDetailsService.findOneById(userSessionVO, archiveDetailsVO);
+	}
+	
 	@PostMapping("/archiveDetails/findAllByParent")
 	@PreAuthorize("hasAuthority('/cloud/archiveDetails/findAllByParent')")
 	public ArchiveDetailsVO[] findAllByParent(@RequestParam("id_parent") Long idParent) {
