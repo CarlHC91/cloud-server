@@ -46,7 +46,7 @@ public class ArchiveDetailsIface {
 		params.put("id_archive", archiveDetailsVO.getIdArchive());
 
 		RestTemplate restTemplate = new RestTemplate();
-		restTemplate.postForObject(url, null, null, params);
+		restTemplate.postForObject(url, null, Void.class, params);
 	}
 
 }

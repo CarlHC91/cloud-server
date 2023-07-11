@@ -45,7 +45,7 @@ public class DirectoryDetailsIface {
 		params.put("id_directory", directoryDetailsVO.getIdDirectory());
 
 		RestTemplate restTemplate = new RestTemplate();
-		restTemplate.postForObject(url, null, null, params);
+		restTemplate.postForObject(url, null, Void.class, params);
 	}
 
 }
