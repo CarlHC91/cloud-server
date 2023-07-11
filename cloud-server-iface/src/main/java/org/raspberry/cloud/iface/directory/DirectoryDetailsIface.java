@@ -18,9 +18,9 @@ public class DirectoryDetailsIface {
 	public DirectoryDetailsVO findOneById(UserDetailsVO userSessionVO, DirectoryDetailsVO directoryDetailsVO) {
 		String url = path + "/directoryDetails/findOneById?token_api={token_api}&id_directory={id_directory}";
 
-		Map<String, String> params = new HashMap<>();
+		Map<String, Object> params = new HashMap<>();
 		params.put("token_api", userSessionVO.getTokenApi());
-		params.put("id_directory", Long.toString(directoryDetailsVO.getIdDirectory()));
+		params.put("id_directory", directoryDetailsVO.getIdDirectory());
 
 		RestTemplate restTemplate = new RestTemplate();
 		return restTemplate.postForObject(url, null, DirectoryDetailsVO.class, params);
@@ -29,9 +29,9 @@ public class DirectoryDetailsIface {
 	public DirectoryDetailsVO[] findAllByParent(UserDetailsVO userSessionVO, DirectoryDetailsVO parentDirectoryVO) {
 		String url = path + "/directoryDetails/findAllByParent?token_api={token_api}&id_parent={id_parent}";
 
-		Map<String, String> params = new HashMap<>();
+		Map<String, Object> params = new HashMap<>();
 		params.put("token_api", userSessionVO.getTokenApi());
-		params.put("id_parent", Long.toString(parentDirectoryVO.getIdDirectory()));
+		params.put("id_parent", parentDirectoryVO.getIdDirectory());
 
 		RestTemplate restTemplate = new RestTemplate();
 		return restTemplate.postForObject(url, null, DirectoryDetailsVO[].class, params);
@@ -40,9 +40,9 @@ public class DirectoryDetailsIface {
 	public void deleteOne(UserDetailsVO userSessionVO, DirectoryDetailsVO directoryDetailsVO) {
 		String url = path + "/directoryDetails/deleteOne?token_api={token_api}&id_directory={id_directory}";
 
-		Map<String, String> params = new HashMap<>();
+		Map<String, Object> params = new HashMap<>();
 		params.put("token_api", userSessionVO.getTokenApi());
-		params.put("id_directory", Long.toString(directoryDetailsVO.getIdDirectory()));
+		params.put("id_directory", directoryDetailsVO.getIdDirectory());
 
 		RestTemplate restTemplate = new RestTemplate();
 		restTemplate.postForObject(url, null, null, params);
