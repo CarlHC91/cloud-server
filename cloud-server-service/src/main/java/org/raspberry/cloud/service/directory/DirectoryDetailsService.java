@@ -73,7 +73,8 @@ public class DirectoryDetailsService {
 			throw new ServiceException("Directory '" + directoryDetailsVO.getFileName() + "' cannot created");
 		}
 
-		DirectoryDetails directoryDetails = generatePK(userSessionVO);
+		DirectoryDetails directoryDetails = new DirectoryDetails();
+		directoryDetails.setIdUser(userSessionVO.getIdUser());
 		directoryDetails.setIdParent(parentDirectory.getIdDirectory());
 		directoryDetails.setFilePath(fileDirectory.getAbsolutePath());
 		directoryDetails.setFileName(fileDirectory.getName());
@@ -133,22 +134,6 @@ public class DirectoryDetailsService {
 			parentDirectory.setCreateDate(new Date());
 			parentDirectory = directoryDetailsDao.save(parentDirectory);
 		}
-	}
-	
-	private DirectoryDetails generatePK(UserDetailsVO userSessionVO) {
-		DirectoryDetails directoryDetails = new DirectoryDetails();
-		directoryDetails.setIdUser(userSessionVO.getIdUser());
-		directoryDetails.setIdDirectory(0L);
-		
-		for (DirectoryDetails childDirectory : directoryDetailsDao.findAll(userSessionVO.getIdUser())) {
-			if (childDirectory.getIdDirectory() > directoryDetails.getIdDirectory()) {
-				directoryDetails.setIdDirectory(childDirectory.getIdDirectory());
-			}
-		}
-		
-		directoryDetails.setIdDirectory(directoryDetails.getIdDirectory() + 1);
-
-		return directoryDetails;
 	}
 
 }

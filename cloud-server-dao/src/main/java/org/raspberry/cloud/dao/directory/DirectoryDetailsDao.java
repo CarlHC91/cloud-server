@@ -3,14 +3,13 @@ package org.raspberry.cloud.dao.directory;
 import java.util.List;
 
 import org.raspberry.cloud.model.directory.DirectoryDetails;
-import org.raspberry.cloud.model.directory.DirectoryDetailsPK;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface DirectoryDetailsDao extends JpaRepository<DirectoryDetails, DirectoryDetailsPK> {
+public interface DirectoryDetailsDao extends JpaRepository<DirectoryDetails, Long> {
 
 	@Query("SELECT entity FROM DirectoryDetails entity WHERE entity.idUser = :idUser AND entity.idDirectory = :idDirectory")
 	public DirectoryDetails findOneById(@Param("idUser") Long idUser, @Param("idDirectory") Long idDirectory);

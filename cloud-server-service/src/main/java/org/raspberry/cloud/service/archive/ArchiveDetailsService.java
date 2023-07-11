@@ -88,7 +88,8 @@ public class ArchiveDetailsService {
 			throw new ServiceException("Archive '" + fileArchive.getName() + "' cannot created");
 		}
 
-		ArchiveDetails archiveDetails = generatePK(userSessionVO);
+		ArchiveDetails archiveDetails = new ArchiveDetails();
+		archiveDetails.setIdUser(userSessionVO.getIdUser());
 		archiveDetails.setIdParent(parentDirectory.getIdDirectory());
 		archiveDetails.setFilePath(fileArchive.getAbsolutePath());
 		archiveDetails.setFileName(fileArchive.getName());
@@ -162,22 +163,6 @@ public class ArchiveDetailsService {
 			parentDirectory.setCreateDate(new Date());
 			parentDirectory = directoryDetailsDao.save(parentDirectory);
 		}
-	}
-	
-	private ArchiveDetails generatePK(UserDetailsVO userSessionVO) {
-		ArchiveDetails archiveDetails = new ArchiveDetails();
-		archiveDetails.setIdUser(userSessionVO.getIdUser());
-		archiveDetails.setIdArchive(0L);
-		
-		for (ArchiveDetails childArchive : archiveDetailsDao.findAll(userSessionVO.getIdUser())) {
-			if (childArchive.getIdArchive() > archiveDetails.getIdArchive()) {
-				archiveDetails.setIdArchive(childArchive.getIdArchive());
-			}
-		}
-		
-		archiveDetails.setIdArchive(archiveDetails.getIdArchive() + 1);
-
-		return archiveDetails;
 	}
 	
 	private void transferStreams(InputStream inputStream, OutputStream outputStream) throws IOException {
