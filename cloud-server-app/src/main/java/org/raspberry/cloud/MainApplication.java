@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan({ "org.raspberry.cloud" })
+@ComponentScan({ "org.raspberry.auth", "org.raspberry.cloud" })
 public class MainApplication {
 
 	public static void main(String[] args) {

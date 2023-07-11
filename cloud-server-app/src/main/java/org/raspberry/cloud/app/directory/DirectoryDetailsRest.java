@@ -1,19 +1,14 @@
 package org.raspberry.cloud.app.directory;
 
-import java.util.List;
-
+import org.raspberry.auth.pojos.entities.user.UserDetailsVO;
 import org.raspberry.cloud.pojos.entities.directory.DirectoryDetailsVO;
-import org.raspberry.cloud.pojos.operations.directorydetails.CreateOne_IN;
-import org.raspberry.cloud.pojos.operations.directorydetails.CreateOne_OUT;
-import org.raspberry.cloud.pojos.operations.directorydetails.DeleteOne_IN;
-import org.raspberry.cloud.pojos.operations.directorydetails.DeleteOne_OUT;
-import org.raspberry.cloud.pojos.operations.directorydetails.FindAllByParent_IN;
-import org.raspberry.cloud.pojos.operations.directorydetails.FindAllByParent_OUT;
 import org.raspberry.cloud.service.directory.DirectoryDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -22,39 +17,43 @@ public class DirectoryDetailsRest {
 	@Autowired
 	private DirectoryDetailsService directoryDetailsService;
 
-	@PostMapping(produces = "application/json", consumes = "application/json", value = "/directoryDetails/findAllByParent")
-	public ResponseEntity<FindAllByParent_OUT> findAllByParent(RequestEntity<FindAllByParent_IN> requestEntityVO) {
-		FindAllByParent_IN findAllByParent_IN = requestEntityVO.getBody();
+	@PostMapping("/directoryDetails/findAllByParent")
+	@PreAuthorize("hasAuthority('/cloud/directoryDetails/findAllByParent')")
+	public DirectoryDetailsVO[] findAllByParent(@RequestParam("id_parent") Long idParent) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
 
-		List<DirectoryDetailsVO> directoryDetailsListVO = directoryDetailsService.findAllByParent(findAllByParent_IN.getParentDirectory());
+		DirectoryDetailsVO parentDirectoryVO = new DirectoryDetailsVO();
+		parentDirectoryVO.setIdDirectory(idParent);
 
-		FindAllByParent_OUT findAllByParent_OUT = new FindAllByParent_OUT();
-		findAllByParent_OUT.setDirectoryDetailsList(directoryDetailsListVO);
-
-		return ResponseEntity.ok(findAllByParent_OUT);
+		return directoryDetailsService.findAllByParent(userSessionVO, parentDirectoryVO);
 	}
-	
-	@PostMapping(produces = "application/json", consumes = "application/json", value = "/directoryDetails/createOne")
-	public ResponseEntity<CreateOne_OUT> createOne(RequestEntity<CreateOne_IN> requestEntityVO) {
-		CreateOne_IN createOne_IN = requestEntityVO.getBody();
 
-		DirectoryDetailsVO directoryDetailsVO = directoryDetailsService.createOne(createOne_IN.getDirectoryDetails());
+	@PostMapping("/directoryDetails/createOne")
+	@PreAuthorize("hasAuthority('/cloud/directoryDetails/createOne')")
+	public DirectoryDetailsVO createOne(@RequestParam("id_parent") Long idParent, @RequestParam("file_name") String fileName) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
 
-		CreateOne_OUT createOne_OUT = new CreateOne_OUT();
-		createOne_OUT.setDirectoryDetails(directoryDetailsVO);
+		DirectoryDetailsVO parentDirectoryVO = new DirectoryDetailsVO();
+		parentDirectoryVO.setIdDirectory(idParent);
 
-		return ResponseEntity.ok(createOne_OUT);
+		DirectoryDetailsVO directoryDetailsVO = new DirectoryDetailsVO();
+		directoryDetailsVO.setFileName(fileName);
+
+		return directoryDetailsService.createOne(userSessionVO, parentDirectoryVO, directoryDetailsVO);
 	}
-	
-	@PostMapping(produces = "application/json", consumes = "application/json", value = "/directoryDetails/deleteOne")
-	public ResponseEntity<DeleteOne_OUT> deleteOne(RequestEntity<DeleteOne_IN> requestEntityVO) {
-		DeleteOne_IN deleteOne_IN = requestEntityVO.getBody();
 
-		directoryDetailsService.deleteOne(deleteOne_IN.getDirectoryDetails());
+	@PostMapping("/directoryDetails/deleteOne")
+	@PreAuthorize("hasAuthority('/cloud/directoryDetails/deleteOne')")
+	public void deleteOne(@RequestParam("id_directory") Long idDirectory) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
 
-		DeleteOne_OUT deleteOne_OUT = new DeleteOne_OUT();
-		
-		return ResponseEntity.ok(deleteOne_OUT);
+		DirectoryDetailsVO directoryDetailsVO = new DirectoryDetailsVO();
+		directoryDetailsVO.setIdDirectory(idDirectory);
+
+		directoryDetailsService.deleteOne(userSessionVO, directoryDetailsVO);
 	}
-	
+
 }

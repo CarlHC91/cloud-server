@@ -4,18 +4,21 @@ import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.IdClass;
 import javax.persistence.Table;
 
 @Entity
+@IdClass(ArchiveDetailsPK.class)
 @Table(name = "ARCHIVE_DETAILS")
 public class ArchiveDetails {
 
 	@Id
+	@Column(name = "ID_USER")
+	private Long idUser;
+
+	@Id
 	@Column(name = "ID_ARCHIVE")
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long idArchive;
 
 	@Column(name = "ID_PARENT")
@@ -35,6 +38,14 @@ public class ArchiveDetails {
 
 	@Column(name = "UPDATE_DATE")
 	private Date updateDate;
+
+	public Long getIdUser() {
+		return idUser;
+	}
+
+	public void setIdUser(Long idUser) {
+		this.idUser = idUser;
+	}
 
 	public Long getIdArchive() {
 		return idArchive;

@@ -17,7 +17,7 @@
 			<artifactId>cloud-server-dao</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-
+		
 		<dependency>
 			<groupId>org.raspberry</groupId>
 			<artifactId>cloud-server-iface</artifactId>

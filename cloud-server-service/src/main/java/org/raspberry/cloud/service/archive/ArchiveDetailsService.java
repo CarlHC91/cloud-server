@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.raspberry.auth.pojos.entities.user.UserDetailsVO;
 import org.raspberry.cloud.dao.archive.ArchiveDetailsDao;
 import org.raspberry.cloud.dao.directory.DirectoryDetailsDao;
 import org.raspberry.cloud.exception.ServiceException;
@@ -31,8 +32,8 @@ public class ArchiveDetailsService {
 	@Autowired
 	private DirectoryDetailsDao directoryDetailsDao;
 
-	public ArchiveDetailsVO findOneById(ArchiveDetailsVO archiveDetailsVO) {
-		ArchiveDetails archiveDetails = archiveDetailsDao.findOneById(archiveDetailsVO.getIdArchive());
+	public ArchiveDetailsVO findOneById(UserDetailsVO userSessionVO, ArchiveDetailsVO archiveDetailsVO) {
+		ArchiveDetails archiveDetails = archiveDetailsDao.findOneById(userSessionVO.getIdUser(), archiveDetailsVO.getIdArchive());
 		if (archiveDetails == null) {
 			return null;
 		}
@@ -48,10 +49,10 @@ public class ArchiveDetailsService {
 		return archiveDetailsVO;
 	}
 
-	public List<ArchiveDetailsVO> findAllByParent(DirectoryDetailsVO parentDirectoryVO) {
+	public ArchiveDetailsVO[] findAllByParent(UserDetailsVO userSessionVO, DirectoryDetailsVO parentDirectoryVO) {
 		List<ArchiveDetailsVO> archiveDetailsListVO = new ArrayList<>();
 
-		for (ArchiveDetails archiveDetails : archiveDetailsDao.findAllByParent(parentDirectoryVO.getIdDirectory())) {
+		for (ArchiveDetails archiveDetails : archiveDetailsDao.findAllByParent(userSessionVO.getIdUser(), parentDirectoryVO.getIdDirectory())) {
 			ArchiveDetailsVO archiveDetailsVO = new ArchiveDetailsVO();
 			archiveDetailsVO.setIdArchive(archiveDetails.getIdArchive());
 			archiveDetailsVO.setIdParent(archiveDetails.getIdParent());
@@ -63,19 +64,18 @@ public class ArchiveDetailsService {
 			archiveDetailsListVO.add(archiveDetailsVO);
 		}
 
-		return archiveDetailsListVO;
+		return archiveDetailsListVO.toArray(new ArchiveDetailsVO[archiveDetailsListVO.size()]);
 	}
 
-	public ArchiveDetailsVO createOne(ArchiveDetailsVO archiveDetailsVO, MultipartFile multipartFile) {
-		DirectoryDetails parentDirectory = directoryDetailsDao.findOneById(archiveDetailsVO.getIdParent());
+	public ArchiveDetailsVO createOne(UserDetailsVO userSessionVO, DirectoryDetailsVO parentDirectoryVO, MultipartFile multipartFile) {
+		generateRoot(userSessionVO);
+		
+		DirectoryDetails parentDirectory = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), parentDirectoryVO.getIdDirectory());
 		if (parentDirectory == null) {
-			throw new ServiceException("ParentDirectory not exists");
+			throw new ServiceException("Directory '" + parentDirectoryVO.getIdDirectory() + "' not exists");
 		}
 
-		File fileArchive = new File(parentDirectory.getFilePath(), archiveDetailsVO.getFileName());
-		if (fileArchive.exists()) {
-			throw new ServiceException("ArchiveDetails already exists");
-		}
+		File fileArchive = new File(parentDirectory.getFilePath(), multipartFile.getOriginalFilename());
 
 		try {
 			InputStream inputStream = multipartFile.getInputStream();
@@ -85,10 +85,10 @@ public class ArchiveDetailsService {
 
 			outputStream.close();
 		} catch (IOException ex) {
-			throw new ServiceException("ArchiveDetails cannot created");
+			throw new ServiceException("Archive '" + fileArchive.getName() + "' cannot created");
 		}
 
-		ArchiveDetails archiveDetails = new ArchiveDetails();
+		ArchiveDetails archiveDetails = generatePK(userSessionVO);
 		archiveDetails.setIdParent(parentDirectory.getIdDirectory());
 		archiveDetails.setFilePath(fileArchive.getAbsolutePath());
 		archiveDetails.setFileName(fileArchive.getName());
@@ -96,7 +96,7 @@ public class ArchiveDetailsService {
 		archiveDetails.setCreateDate(new Date());
 		archiveDetails = archiveDetailsDao.save(archiveDetails);
 
-		archiveDetailsVO = new ArchiveDetailsVO();
+		ArchiveDetailsVO archiveDetailsVO = new ArchiveDetailsVO();
 		archiveDetailsVO.setIdArchive(archiveDetails.getIdArchive());
 		archiveDetailsVO.setIdParent(archiveDetails.getIdParent());
 		archiveDetailsVO.setFileName(archiveDetails.getFileName());
@@ -107,31 +107,29 @@ public class ArchiveDetailsService {
 		return archiveDetailsVO;
 	}
 
-	public Boolean deleteOne(ArchiveDetailsVO archiveDetailsVO) {
-		ArchiveDetails archiveDetails = archiveDetailsDao.findOneById(archiveDetailsVO.getIdArchive());
+	public void deleteOne(UserDetailsVO userSessionVO, ArchiveDetailsVO archiveDetailsVO) {
+		ArchiveDetails archiveDetails = archiveDetailsDao.findOneById(userSessionVO.getIdUser(), archiveDetailsVO.getIdArchive());
 		if (archiveDetails == null) {
-			throw new ServiceException("ArchiveDetails not exists");
+			throw new ServiceException("Archive '" + archiveDetailsVO.getIdArchive() + "' not exists");
 		}
 
 		File fileArchive = new File(archiveDetails.getFilePath());
 		if (!fileArchive.delete()) {
-			throw new ServiceException("ArchiveDetails cannot deleted");
+			throw new ServiceException("Archive '" + fileArchive.getName() + "' cannot deleted");
 		}
 
 		archiveDetailsDao.delete(archiveDetails);
-		
-		return true;
 	}
 	
-	public Resource downloadOne(ArchiveDetailsVO archiveDetailsVO) {
-		ArchiveDetails archiveDetails = archiveDetailsDao.findOneById(archiveDetailsVO.getIdArchive());
+	public Resource downloadOne(UserDetailsVO userSessionVO, ArchiveDetailsVO archiveDetailsVO) {
+		ArchiveDetails archiveDetails = archiveDetailsDao.findOneById(userSessionVO.getIdUser(), archiveDetailsVO.getIdArchive());
 		if (archiveDetails == null) {
-			throw new ServiceException("ArchiveDetails not exists");
+			throw new ServiceException("Archive '" + archiveDetailsVO.getIdArchive() + "' not exists");
 		}
 
 		File fileArchive = new File(archiveDetails.getFilePath());
 		if (!fileArchive.exists()) {
-			throw new ServiceException("FileArchive not exists");
+			throw new ServiceException("Archive '" + fileArchive.getName() + "' not exists");
 		}
 		
 		try {
@@ -139,8 +137,47 @@ public class ArchiveDetailsService {
 			
 			return new InputStreamResource(inputStream);
 		} catch (IOException ex) {
-			throw new ServiceException("Resource cannot downloaded");
+			throw new ServiceException("Archive '" + fileArchive.getName() + "' cannot downloaded");
 		}
+	}
+	
+	private void generateRoot(UserDetailsVO userSessionVO) {
+		File fileRoot = new File("files");
+		if (!fileRoot.exists()) {
+			throw new ServiceException("Directory '" + fileRoot.getName() + "' not exists");
+		}
+		
+		DirectoryDetails parentDirectory = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), 0L);
+		if (parentDirectory == null) {
+			File fileParent = new File(fileRoot, userSessionVO.getUsername());
+			if (!fileParent.mkdir()) {
+				throw new ServiceException("Directory '" + fileParent.getName() + "' cannot created");
+			}
+
+			parentDirectory = new DirectoryDetails();
+			parentDirectory.setIdUser(userSessionVO.getIdUser());
+			parentDirectory.setIdDirectory(0L);
+			parentDirectory.setFilePath(fileParent.getAbsolutePath());
+			parentDirectory.setFileName(fileParent.getName());
+			parentDirectory.setCreateDate(new Date());
+			parentDirectory = directoryDetailsDao.save(parentDirectory);
+		}
+	}
+	
+	private ArchiveDetails generatePK(UserDetailsVO userSessionVO) {
+		ArchiveDetails archiveDetails = new ArchiveDetails();
+		archiveDetails.setIdUser(userSessionVO.getIdUser());
+		archiveDetails.setIdArchive(0L);
+		
+		for (ArchiveDetails childArchive : archiveDetailsDao.findAll(userSessionVO.getIdUser())) {
+			if (childArchive.getIdArchive() > archiveDetails.getIdArchive()) {
+				archiveDetails.setIdArchive(childArchive.getIdArchive());
+			}
+		}
+		
+		archiveDetails.setIdArchive(archiveDetails.getIdArchive() + 1);
+
+		return archiveDetails;
 	}
 	
 	private void transferStreams(InputStream inputStream, OutputStream outputStream) throws IOException {

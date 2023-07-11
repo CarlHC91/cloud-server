@@ -33,6 +33,12 @@
 			<artifactId>h2</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.raspberry</groupId>
+			<artifactId>auth-server-iface</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
 
 	<modules>

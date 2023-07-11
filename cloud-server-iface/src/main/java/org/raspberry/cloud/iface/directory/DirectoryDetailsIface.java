@@ -1,12 +1,10 @@
 package org.raspberry.cloud.iface.directory;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.raspberry.auth.pojos.entities.user.UserDetailsVO;
 import org.raspberry.cloud.pojos.entities.directory.DirectoryDetailsVO;
-import org.raspberry.cloud.pojos.operations.directorydetails.DeleteOne_IN;
-import org.raspberry.cloud.pojos.operations.directorydetails.DeleteOne_OUT;
-import org.raspberry.cloud.pojos.operations.directorydetails.FindAllByParent_IN;
-import org.raspberry.cloud.pojos.operations.directorydetails.FindAllByParent_OUT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -17,26 +15,26 @@ public class DirectoryDetailsIface {
 	@Value("${iface.server.cloud.path}")
 	private String path;
 
-	public List<DirectoryDetailsVO> findAllByParent(DirectoryDetailsVO parentDirectoryVO) {
-		String url = path + "/directoryDetails/findAllByParent";
+	public DirectoryDetailsVO[] findAllByParent(UserDetailsVO userSessionVO, DirectoryDetailsVO parentDirectoryVO) {
+		String url = path + "/directoryDetails/findAllByParent?token_api={token_api}&id_parent={id_parent}";
 
-		FindAllByParent_IN findAllByParent_IN = new FindAllByParent_IN();
-		findAllByParent_IN.setParentDirectory(parentDirectoryVO);
-		
+		Map<String, String> params = new HashMap<>();
+		params.put("token_api", userSessionVO.getTokenApi());
+		params.put("id_parent", Long.toString(parentDirectoryVO.getIdDirectory()));
+
 		RestTemplate restTemplate = new RestTemplate();
-		FindAllByParent_OUT findAllByParent_OUT = restTemplate.postForObject(url, findAllByParent_IN, FindAllByParent_OUT.class);
-
-		return findAllByParent_OUT.getDirectoryDetailsList();
+		return restTemplate.postForObject(url, null, DirectoryDetailsVO[].class, params);
 	}
 
-	public void deleteOne(DirectoryDetailsVO directoryDetailsVO) {
-		String url = path + "/directoryDetails/deleteOne";
+	public void deleteOne(UserDetailsVO userSessionVO, DirectoryDetailsVO directoryDetailsVO) {
+		String url = path + "/directoryDetails/deleteOne?token_api={token_api}&id_directory={id_directory}";
 
-		DeleteOne_IN deleteOne_IN = new DeleteOne_IN();
-		deleteOne_IN.setDirectoryDetails(directoryDetailsVO);
-		
+		Map<String, String> params = new HashMap<>();
+		params.put("token_api", userSessionVO.getTokenApi());
+		params.put("id_directory", Long.toString(directoryDetailsVO.getIdDirectory()));
+
 		RestTemplate restTemplate = new RestTemplate();
-		restTemplate.postForObject(url, deleteOne_IN, DeleteOne_OUT.class);
+		restTemplate.postForObject(url, null, String.class, params);
 	}
 
 }
