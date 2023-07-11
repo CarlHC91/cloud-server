@@ -60,12 +60,12 @@ public class DirectoryDetailsService {
 		return directoryDetailsListVO.toArray(new DirectoryDetailsVO[directoryDetailsListVO.size()]);
 	}
 
-	public DirectoryDetailsVO createOne(UserDetailsVO userSessionVO, DirectoryDetailsVO parentDirectoryVO, DirectoryDetailsVO directoryDetailsVO) {
+	public DirectoryDetailsVO createOne(UserDetailsVO userSessionVO, DirectoryDetailsVO directoryDetailsVO) {
 		generateRoot(userSessionVO);
 		
-		DirectoryDetails parentDirectory = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), parentDirectoryVO.getIdDirectory());
+		DirectoryDetails parentDirectory = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), directoryDetailsVO.getIdParent());
 		if (parentDirectory == null) {
-			throw new ServiceException("Directory '" + parentDirectoryVO.getIdDirectory() + "' not exists");
+			throw new ServiceException("Directory '" + directoryDetailsVO.getIdParent() + "' not exists");
 		}
 
 		File fileDirectory = new File(parentDirectory.getFilePath(), directoryDetailsVO.getFileName());

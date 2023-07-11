@@ -35,14 +35,15 @@ public class ArchiveDetailsRest {
 
 	@PostMapping("/archiveDetails/createOne")
 	@PreAuthorize("hasAuthority('/cloud/archiveDetails/createOne')")
-	public ArchiveDetailsVO createOne(@RequestParam("id_parent") Long idParent, @RequestParam("file") MultipartFile multipartFile) {
+	public ArchiveDetailsVO createOne(@RequestParam("id_parent") Long idParent, @RequestParam("file_name") String fileName, @RequestParam("content") MultipartFile multipartFile) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
 
-		DirectoryDetailsVO parentDirectoryVO = new DirectoryDetailsVO();
-		parentDirectoryVO.setIdDirectory(idParent);
-
-		return archiveDetailsService.createOne(userSessionVO, parentDirectoryVO, multipartFile);
+		ArchiveDetailsVO archiveDetailsVO = new ArchiveDetailsVO();
+		archiveDetailsVO.setIdParent(idParent);
+		archiveDetailsVO.setFileName(fileName);
+		
+		return archiveDetailsService.createOne(userSessionVO, archiveDetailsVO, multipartFile);
 	}
 
 	@PostMapping("/archiveDetails/deleteOne")

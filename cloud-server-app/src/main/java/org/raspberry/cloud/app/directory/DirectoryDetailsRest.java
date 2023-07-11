@@ -35,13 +35,11 @@ public class DirectoryDetailsRest {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
 
-		DirectoryDetailsVO parentDirectoryVO = new DirectoryDetailsVO();
-		parentDirectoryVO.setIdDirectory(idParent);
-
 		DirectoryDetailsVO directoryDetailsVO = new DirectoryDetailsVO();
+		directoryDetailsVO.setIdParent(idParent);
 		directoryDetailsVO.setFileName(fileName);
 
-		return directoryDetailsService.createOne(userSessionVO, parentDirectoryVO, directoryDetailsVO);
+		return directoryDetailsService.createOne(userSessionVO, directoryDetailsVO);
 	}
 
 	@PostMapping("/directoryDetails/deleteOne")

@@ -67,15 +67,15 @@ public class ArchiveDetailsService {
 		return archiveDetailsListVO.toArray(new ArchiveDetailsVO[archiveDetailsListVO.size()]);
 	}
 
-	public ArchiveDetailsVO createOne(UserDetailsVO userSessionVO, DirectoryDetailsVO parentDirectoryVO, MultipartFile multipartFile) {
+	public ArchiveDetailsVO createOne(UserDetailsVO userSessionVO, ArchiveDetailsVO archiveDetailsVO, MultipartFile multipartFile) {
 		generateRoot(userSessionVO);
 		
-		DirectoryDetails parentDirectory = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), parentDirectoryVO.getIdDirectory());
+		DirectoryDetails parentDirectory = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), archiveDetailsVO.getIdParent());
 		if (parentDirectory == null) {
-			throw new ServiceException("Directory '" + parentDirectoryVO.getIdDirectory() + "' not exists");
+			throw new ServiceException("Directory '" + archiveDetailsVO.getIdParent() + "' not exists");
 		}
 
-		File fileArchive = new File(parentDirectory.getFilePath(), multipartFile.getOriginalFilename());
+		File fileArchive = new File(parentDirectory.getFilePath(), archiveDetailsVO.getFileName());
 
 		try {
 			InputStream inputStream = multipartFile.getInputStream();
@@ -96,7 +96,7 @@ public class ArchiveDetailsService {
 		archiveDetails.setCreateDate(new Date());
 		archiveDetails = archiveDetailsDao.save(archiveDetails);
 
-		ArchiveDetailsVO archiveDetailsVO = new ArchiveDetailsVO();
+		archiveDetailsVO = new ArchiveDetailsVO();
 		archiveDetailsVO.setIdArchive(archiveDetails.getIdArchive());
 		archiveDetailsVO.setIdParent(archiveDetails.getIdParent());
 		archiveDetailsVO.setFileName(archiveDetails.getFileName());
