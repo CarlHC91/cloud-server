@@ -68,15 +68,27 @@ public class ArchiveDetailsService {
 	}
 
 	public ArchiveDetailsVO createOne(UserDetailsVO userSessionVO, ArchiveDetailsVO archiveDetailsVO, MultipartFile multipartFile) {
-		generateRoot(userSessionVO);
-		
 		DirectoryDetails parentDirectory = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), archiveDetailsVO.getIdParent());
 		if (parentDirectory == null) {
 			throw new ServiceException("Directory '" + archiveDetailsVO.getIdParent() + "' not exists");
 		}
-
+		
 		File fileArchive = new File(parentDirectory.getFilePath(), archiveDetailsVO.getFileName());
+		int numDirectory = 2;
+		
+		while (fileArchive.exists()) {
+			String oldFileName = archiveDetailsVO.getFileName();
+			String newFileName = oldFileName + " (" + numDirectory + ")";
+			
+			int i = oldFileName.lastIndexOf(".");
+			if (i > 0) {
+				newFileName = oldFileName.substring(0, i) + " (" + numDirectory + ")" + oldFileName.substring(i);
+			}
 
+			fileArchive = new File(parentDirectory.getFilePath(), newFileName);
+			numDirectory++;
+		}
+		
 		try {
 			InputStream inputStream = multipartFile.getInputStream();
 			OutputStream outputStream = new FileOutputStream(fileArchive);
@@ -85,11 +97,14 @@ public class ArchiveDetailsService {
 
 			outputStream.close();
 		} catch (IOException ex) {
-			throw new ServiceException("Archive '" + fileArchive.getName() + "' cannot created");
+			throw new ServiceException("File '" + fileArchive.getName() + "' cannot created");
 		}
 
+		Long idArchive = archiveDetailsDao.getMaxIdArchive(userSessionVO.getIdUser());
+		
 		ArchiveDetails archiveDetails = new ArchiveDetails();
 		archiveDetails.setIdUser(userSessionVO.getIdUser());
+		archiveDetails.setIdArchive(idArchive == null ? 1L : idArchive + 1);
 		archiveDetails.setIdParent(parentDirectory.getIdDirectory());
 		archiveDetails.setFilePath(fileArchive.getAbsolutePath());
 		archiveDetails.setFileName(fileArchive.getName());
@@ -116,7 +131,7 @@ public class ArchiveDetailsService {
 
 		File fileArchive = new File(archiveDetails.getFilePath());
 		if (!fileArchive.delete()) {
-			throw new ServiceException("Archive '" + fileArchive.getName() + "' cannot deleted");
+			throw new ServiceException("File '" + fileArchive.getName() + "' cannot deleted");
 		}
 
 		archiveDetailsDao.delete(archiveDetails);
@@ -130,7 +145,7 @@ public class ArchiveDetailsService {
 
 		File fileArchive = new File(archiveDetails.getFilePath());
 		if (!fileArchive.exists()) {
-			throw new ServiceException("Archive '" + fileArchive.getName() + "' not exists");
+			throw new ServiceException("File '" + fileArchive.getName() + "' not exists");
 		}
 		
 		try {
@@ -138,30 +153,7 @@ public class ArchiveDetailsService {
 			
 			return new InputStreamResource(inputStream);
 		} catch (IOException ex) {
-			throw new ServiceException("Archive '" + fileArchive.getName() + "' cannot downloaded");
-		}
-	}
-	
-	private void generateRoot(UserDetailsVO userSessionVO) {
-		File fileRoot = new File("files");
-		if (!fileRoot.exists()) {
-			throw new ServiceException("Directory '" + fileRoot.getName() + "' not exists");
-		}
-		
-		DirectoryDetails parentDirectory = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), 0L);
-		if (parentDirectory == null) {
-			File fileParent = new File(fileRoot, userSessionVO.getUsername());
-			if (!fileParent.mkdir()) {
-				throw new ServiceException("Directory '" + fileParent.getName() + "' cannot created");
-			}
-
-			parentDirectory = new DirectoryDetails();
-			parentDirectory.setIdUser(userSessionVO.getIdUser());
-			parentDirectory.setIdDirectory(0L);
-			parentDirectory.setFilePath(fileParent.getAbsolutePath());
-			parentDirectory.setFileName(fileParent.getName());
-			parentDirectory.setCreateDate(new Date());
-			parentDirectory = directoryDetailsDao.save(parentDirectory);
+			throw new ServiceException("File '" + fileArchive.getName() + "' cannot downloaded");
 		}
 	}
 	

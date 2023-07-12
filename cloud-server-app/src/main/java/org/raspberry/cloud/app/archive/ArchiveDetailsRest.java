@@ -47,13 +47,13 @@ public class ArchiveDetailsRest {
 
 	@PostMapping("/archiveDetails/createOne")
 	@PreAuthorize("hasAuthority('/cloud/archiveDetails/createOne')")
-	public ArchiveDetailsVO createOne(@RequestParam("id_parent") Long idParent, @RequestParam("file_name") String fileName, @RequestParam("content") MultipartFile multipartFile) {
+	public ArchiveDetailsVO createOne(@RequestParam("id_parent") Long idParent, @RequestParam("file") MultipartFile multipartFile) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
 
 		ArchiveDetailsVO archiveDetailsVO = new ArchiveDetailsVO();
 		archiveDetailsVO.setIdParent(idParent);
-		archiveDetailsVO.setFileName(fileName);
+		archiveDetailsVO.setFileName(multipartFile.getOriginalFilename());
 		
 		return archiveDetailsService.createOne(userSessionVO, archiveDetailsVO, multipartFile);
 	}
