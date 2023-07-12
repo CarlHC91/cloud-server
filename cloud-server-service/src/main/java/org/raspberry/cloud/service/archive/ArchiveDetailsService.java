@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import org.raspberry.auth.pojos.entities.user.UserDetailsVO;
 import org.raspberry.cloud.dao.archive.ArchiveDetailsDao;
@@ -68,6 +69,28 @@ public class ArchiveDetailsService {
 	}
 
 	public ArchiveDetailsVO createOne(UserDetailsVO userSessionVO, ArchiveDetailsVO archiveDetailsVO, MultipartFile multipartFile) {
+		DirectoryDetails rootDirectory = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), 0L);
+		if (rootDirectory == null) {
+			File fileRoot = new File("files", UUID.randomUUID().toString());
+
+			while (fileRoot.exists()) {
+				fileRoot = new File("files", UUID.randomUUID().toString());
+			}
+			
+			if (!fileRoot.mkdir()) {
+				throw new ServiceException("File '" + fileRoot.getName() + "' cannot created");
+			}
+			
+			rootDirectory = new DirectoryDetails();
+			rootDirectory.setIdUser(userSessionVO.getIdUser());
+			rootDirectory.setIdDirectory(0L);
+			rootDirectory.setIdParent(null);
+			rootDirectory.setFilePath(fileRoot.getAbsolutePath());
+			rootDirectory.setFileName(fileRoot.getName());
+			rootDirectory.setCreateDate(new Date());
+			rootDirectory = directoryDetailsDao.save(rootDirectory);
+		}
+		
 		DirectoryDetails parentDirectory = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), archiveDetailsVO.getIdParent());
 		if (parentDirectory == null) {
 			throw new ServiceException("Directory '" + archiveDetailsVO.getIdParent() + "' not exists");
