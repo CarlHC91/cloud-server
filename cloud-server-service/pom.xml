@@ -20,7 +20,7 @@
 		
 		<dependency>
 			<groupId>org.raspberry</groupId>
-			<artifactId>cloud-server-iface</artifactId>
+			<artifactId>cloud-server-pojos</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 	</dependencies>

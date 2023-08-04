@@ -4,13 +4,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 import org.raspberry.auth.pojos.entities.user.UserDetailsVO;
+import org.raspberry.cloud.dao.archive.ArchiveDetailsDao;
 import org.raspberry.cloud.dao.directory.DirectoryDetailsDao;
 import org.raspberry.cloud.exception.ServiceException;
-import org.raspberry.cloud.iface.archive.ArchiveDetailsIface;
-import org.raspberry.cloud.iface.directory.DirectoryDetailsIface;
+import org.raspberry.cloud.model.archive.ArchiveDetails;
 import org.raspberry.cloud.model.directory.DirectoryDetails;
 import org.raspberry.cloud.pojos.entities.archive.ArchiveDetailsVO;
 import org.raspberry.cloud.pojos.entities.directory.DirectoryDetailsVO;
@@ -21,13 +20,11 @@ import org.springframework.stereotype.Service;
 public class DirectoryDetailsService {
 
 	@Autowired
+	private ArchiveDetailsDao archiveDetailsDao;
+	
+	@Autowired
 	private DirectoryDetailsDao directoryDetailsDao;
-
-	@Autowired
-	private ArchiveDetailsIface archiveDetailsIface;
-	@Autowired
-	private DirectoryDetailsIface directoryDetailsIface;
-
+	
 	public DirectoryDetailsVO findOneById(UserDetailsVO userSessionVO, DirectoryDetailsVO directoryDetailsVO) {
 		DirectoryDetails directoryDetails = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), directoryDetailsVO.getIdDirectory());
 		if (directoryDetails == null) {
@@ -62,60 +59,28 @@ public class DirectoryDetailsService {
 	}
 
 	public DirectoryDetailsVO createOne(UserDetailsVO userSessionVO, DirectoryDetailsVO directoryDetailsVO) {
-		DirectoryDetails rootDirectory = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), 0L);
-		if (rootDirectory == null) {
-			File fileRoot = new File("files", UUID.randomUUID().toString());
-
-			while (fileRoot.exists()) {
-				fileRoot = new File("files", UUID.randomUUID().toString());
-			}
-			
-			if (!fileRoot.mkdir()) {
-				throw new ServiceException("File '" + fileRoot.getName() + "' cannot created");
-			}
-			
-			rootDirectory = new DirectoryDetails();
-			rootDirectory.setIdUser(userSessionVO.getIdUser());
-			rootDirectory.setIdDirectory(0L);
-			rootDirectory.setIdParent(null);
-			rootDirectory.setFilePath(fileRoot.getAbsolutePath());
-			rootDirectory.setFileName(fileRoot.getName());
-			rootDirectory.setCreateDate(new Date());
-			rootDirectory = directoryDetailsDao.save(rootDirectory);
-		}
+		DirectoryDetailsVO parentDirectoryVO = new DirectoryDetailsVO();
+		parentDirectoryVO.setIdDirectory(directoryDetailsVO.getIdParent());
+		File fileParent = getFilePath(userSessionVO, parentDirectoryVO);
 		
-		DirectoryDetails parentDirectory = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), directoryDetailsVO.getIdParent());
-		if (parentDirectory == null) {
-			throw new ServiceException("Directory '" + directoryDetailsVO.getIdParent() + "' not exists");
-		}
-		
-		File fileDirectory = new File(parentDirectory.getFilePath(), directoryDetailsVO.getFileName());
+		File fileDirectory = new File(fileParent, directoryDetailsVO.getFileName());
 		int numDirectory = 2;
 		
 		while (fileDirectory.exists()) {
 			String oldFileName = directoryDetailsVO.getFileName();
 			String newFileName = oldFileName + " (" + numDirectory + ")";
 			
-			int i = oldFileName.lastIndexOf(".");
-			if (i > 0) {
-				newFileName = oldFileName.substring(0, i) + " (" + numDirectory + ")" + oldFileName.substring(i);
-			}
-
-			fileDirectory = new File(parentDirectory.getFilePath(), newFileName);
+			fileDirectory = new File(fileParent, newFileName);
 			numDirectory++;
 		}
 		
 		if (!fileDirectory.mkdir()) {
-			throw new ServiceException("File '" + fileDirectory.getName() + "' cannot created");
+			throw new ServiceException("FileDirectory cannot create");
 		}
-
-		Long idDirectory = directoryDetailsDao.getMaxIdDirectory(userSessionVO.getIdUser());
-
+		
 		DirectoryDetails directoryDetails = new DirectoryDetails();
+		directoryDetails.setIdParent(directoryDetailsVO.getIdParent());
 		directoryDetails.setIdUser(userSessionVO.getIdUser());
-		directoryDetails.setIdDirectory(idDirectory == null ? 1L : idDirectory + 1);
-		directoryDetails.setIdParent(parentDirectory.getIdDirectory());
-		directoryDetails.setFilePath(fileDirectory.getAbsolutePath());
 		directoryDetails.setFileName(fileDirectory.getName());
 		directoryDetails.setCreateDate(new Date());
 		directoryDetails = directoryDetailsDao.save(directoryDetails);
@@ -129,27 +94,115 @@ public class DirectoryDetailsService {
 
 		return directoryDetailsVO;
 	}
-
-	public void deleteOne(UserDetailsVO userSessionVO, DirectoryDetailsVO directoryDetailsVO) {
-		for (ArchiveDetailsVO childArchiveVO : archiveDetailsIface.findAllByParent(userSessionVO, directoryDetailsVO)) {
-			archiveDetailsIface.deleteOne(userSessionVO, childArchiveVO);
-		}
-
-		for (DirectoryDetailsVO childDirectoryVO : directoryDetailsIface.findAllByParent(userSessionVO, directoryDetailsVO)) {
-			directoryDetailsIface.deleteOne(userSessionVO, childDirectoryVO);
-		}
-
+	
+	public DirectoryDetailsVO renameOne(UserDetailsVO userSessionVO, DirectoryDetailsVO directoryDetailsVO) {
 		DirectoryDetails directoryDetails = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), directoryDetailsVO.getIdDirectory());
 		if (directoryDetails == null) {
-			throw new ServiceException("Directory '" + directoryDetailsVO.getIdDirectory() + "' not exists");
+			throw new ServiceException("DirectoryDetails not exists");
 		}
+		
+		DirectoryDetailsVO parentDirectoryVO = new DirectoryDetailsVO();
+		parentDirectoryVO.setIdDirectory(directoryDetails.getIdParent());
+		File fileParent = getFilePath(userSessionVO, parentDirectoryVO);
+		
+		File oldFileDirectory = new File(fileParent, directoryDetails.getFileName());
+		File newFileDirectory = new File(fileParent, directoryDetailsVO.getFileName());
+		int numDirectory = 2;
+		
+		while (newFileDirectory.exists()) {
+			String oldFileName = directoryDetailsVO.getFileName();
+			String newFileName = oldFileName + " (" + numDirectory + ")";
+			
+			newFileDirectory = new File(fileParent, newFileName);
+			numDirectory++;
+		}
+		
+		if (!oldFileDirectory.renameTo(newFileDirectory)) {
+			throw new ServiceException("FileDirectory cannot rename");
+		}
+		
+		directoryDetails.setFileName(newFileDirectory.getName());
+		directoryDetails.setUpdateDate(new Date());
+		directoryDetails = directoryDetailsDao.save(directoryDetails);
+		
+		directoryDetailsVO = new DirectoryDetailsVO();
+		directoryDetailsVO.setIdDirectory(directoryDetails.getIdDirectory());
+		directoryDetailsVO.setIdParent(directoryDetails.getIdParent());
+		directoryDetailsVO.setFileName(directoryDetails.getFileName());
+		directoryDetailsVO.setCreateDate(directoryDetails.getCreateDate());
+		directoryDetailsVO.setUpdateDate(directoryDetails.getUpdateDate());
 
-		File fileDirectory = new File(directoryDetails.getFilePath());
+		return directoryDetailsVO;
+	}
+
+	public void deleteOne(UserDetailsVO userSessionVO, DirectoryDetailsVO directoryDetailsVO) {
+		DirectoryDetails directoryDetails = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), directoryDetailsVO.getIdDirectory());
+		if (directoryDetails == null) {
+			throw new ServiceException("DirectoryDetails not exists");
+		}
+		
+		for (DirectoryDetails childDirectory : directoryDetailsDao.findAllByParent(userSessionVO.getIdUser(), directoryDetailsVO.getIdDirectory())) {
+			DirectoryDetailsVO childDirectoryVO = new DirectoryDetailsVO();
+			childDirectoryVO.setIdDirectory(childDirectory.getIdDirectory());
+			deleteOne(userSessionVO, childDirectoryVO);
+		}
+			
+		for (ArchiveDetails childArchive : archiveDetailsDao.findAllByParent(userSessionVO.getIdUser(), directoryDetailsVO.getIdDirectory())) {
+			ArchiveDetailsVO childArchiveVO = new ArchiveDetailsVO();
+			childArchiveVO.setIdArchive(childArchive.getIdArchive());
+			deleteOne(userSessionVO, childArchiveVO);
+		}
+		
+		File fileDirectory = getFilePath(userSessionVO, directoryDetailsVO);
 		if (!fileDirectory.delete()) {
-			throw new ServiceException("File '" + fileDirectory.getName() + "' cannot deleted");
+			throw new ServiceException("FileDirectory cannot delete");
 		}
-
+		
 		directoryDetailsDao.delete(directoryDetails);
 	}
 	
+	private void deleteOne(UserDetailsVO userSessionVO, ArchiveDetailsVO archiveDetailsVO) {
+		ArchiveDetails archiveDetails = archiveDetailsDao.findOneById(userSessionVO.getIdUser(), archiveDetailsVO.getIdArchive());
+		if (archiveDetails == null) {
+			throw new ServiceException("ArchiveDetails not exists");
+		}
+		
+		File fileArchive = getFilePath(userSessionVO, archiveDetailsVO);
+		if (!fileArchive.delete()) {
+			throw new ServiceException("FileArchive cannot delete");
+		}
+		
+		archiveDetailsDao.delete(archiveDetails);
+	}
+	
+	private File getFilePath(UserDetailsVO userSessionVO, DirectoryDetailsVO directoryDetailsVO) {
+		if (directoryDetailsVO.getIdDirectory() == 0L) {
+			return new File("files", userSessionVO.getUsername());
+		}
+		
+		DirectoryDetails directoryDetails = directoryDetailsDao.findOneById(userSessionVO.getIdUser(), directoryDetailsVO.getIdDirectory());
+		if (directoryDetails == null) {
+			throw new ServiceException("DirectoryDetails not exists");
+		}
+			
+		DirectoryDetailsVO parentDirectoryVO = new DirectoryDetailsVO();
+		parentDirectoryVO.setIdDirectory(directoryDetails.getIdParent());
+		File fileParent = getFilePath(userSessionVO, parentDirectoryVO);
+		
+		return new File(fileParent, directoryDetails.getFileName());
+	}
+	
+	private File getFilePath(UserDetailsVO userSessionVO, ArchiveDetailsVO archiveDetailsVO) {
+		ArchiveDetails archiveDetails = archiveDetailsDao.findOneById(userSessionVO.getIdUser(), archiveDetailsVO.getIdArchive());
+		if (archiveDetails == null) {
+			throw new ServiceException("ArchiveDetails not exists");
+		}
+			
+		DirectoryDetailsVO parentDirectoryVO = new DirectoryDetailsVO();
+		parentDirectoryVO.setIdDirectory(archiveDetails.getIdParent());
+		File fileParent = getFilePath(userSessionVO, parentDirectoryVO);
+		
+		return new File(fileParent, archiveDetails.getFileName());
+	}
+
 }
