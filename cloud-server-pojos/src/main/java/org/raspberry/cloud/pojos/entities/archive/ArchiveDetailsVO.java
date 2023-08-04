@@ -15,6 +15,12 @@ public class ArchiveDetailsVO {
 	@JsonProperty("id_parent")
 	private Long idParent;
 
+	@JsonProperty("id_type")
+	private Long idType;
+
+	@JsonProperty("id_format")
+	private Long idFormat;
+
 	@JsonProperty("file_name")
 	private String fileName;
 
@@ -43,6 +49,22 @@ public class ArchiveDetailsVO {
 		this.idParent = idParent;
 	}
 
+	public Long getIdType() {
+		return idType;
+	}
+
+	public void setIdType(Long idType) {
+		this.idType = idType;
+	}
+
+	public Long getIdFormat() {
+		return idFormat;
+	}
+
+	public void setIdFormat(Long idFormat) {
+		this.idFormat = idFormat;
+	}
+	
 	public String getFileName() {
 		return fileName;
 	}
