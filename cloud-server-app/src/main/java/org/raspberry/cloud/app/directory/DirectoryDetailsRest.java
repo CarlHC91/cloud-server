@@ -17,8 +17,8 @@ public class DirectoryDetailsRest {
 	@Autowired
 	private DirectoryDetailsService directoryDetailsService;
 
-	@PostMapping("/directoryDetails/findOneById")
-	@PreAuthorize("hasAuthority('/cloud/directoryDetails/findOneById')")
+	@PostMapping("/api/directoryDetails/findOneById")
+	@PreAuthorize("hasAuthority('/cloud/api/directoryDetails/findOneById')")
 	public DirectoryDetailsVO findOneById(@RequestParam("id_directory") Long idDirectory) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
@@ -29,8 +29,8 @@ public class DirectoryDetailsRest {
 		return directoryDetailsService.findOneById(userSessionVO, directoryDetailsVO);
 	}
 	
-	@PostMapping("/directoryDetails/findAllByParent")
-	@PreAuthorize("hasAuthority('/cloud/directoryDetails/findAllByParent')")
+	@PostMapping("/api/directoryDetails/findAllByParent")
+	@PreAuthorize("hasAuthority('/cloud/api/directoryDetails/findAllByParent')")
 	public DirectoryDetailsVO[] findAllByParent(@RequestParam("id_parent") Long idParent) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
@@ -41,8 +41,8 @@ public class DirectoryDetailsRest {
 		return directoryDetailsService.findAllByParent(userSessionVO, parentDirectoryVO);
 	}
 
-	@PostMapping("/directoryDetails/createOne")
-	@PreAuthorize("hasAuthority('/cloud/directoryDetails/createOne')")
+	@PostMapping("/api/directoryDetails/createOne")
+	@PreAuthorize("hasAuthority('/cloud/api/directoryDetails/createOne')")
 	public DirectoryDetailsVO createOne(@RequestParam("id_parent") Long idParent, @RequestParam("file_name") String fileName) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
@@ -50,12 +50,25 @@ public class DirectoryDetailsRest {
 		DirectoryDetailsVO directoryDetailsVO = new DirectoryDetailsVO();
 		directoryDetailsVO.setIdParent(idParent);
 		directoryDetailsVO.setFileName(fileName);
-
+		
 		return directoryDetailsService.createOne(userSessionVO, directoryDetailsVO);
 	}
+	
+	@PostMapping("/api/directoryDetails/renameOne")
+	@PreAuthorize("hasAuthority('/cloud/api/directoryDetails/renameOne')")
+	public DirectoryDetailsVO renameOne(@RequestParam("id_directory") Long idDirectory, @RequestParam("file_name") String fileName) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
 
-	@PostMapping("/directoryDetails/deleteOne")
-	@PreAuthorize("hasAuthority('/cloud/directoryDetails/deleteOne')")
+		DirectoryDetailsVO directoryDetailsVO = new DirectoryDetailsVO();
+		directoryDetailsVO.setIdDirectory(idDirectory);
+		directoryDetailsVO.setFileName(fileName);
+		
+		return directoryDetailsService.renameOne(userSessionVO, directoryDetailsVO);
+	}
+
+	@PostMapping("/api/directoryDetails/deleteOne")
+	@PreAuthorize("hasAuthority('/cloud/api/directoryDetails/deleteOne')")
 	public void deleteOne(@RequestParam("id_directory") Long idDirectory) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		UserDetailsVO userSessionVO = (UserDetailsVO) authentication.getPrincipal();
